@@ -1,16 +1,20 @@
 import os
 import time
 import math
+import logging
 import functools
 from datetime import datetime, timezone
 
-from tqdm import tqdm
-from selenium import webdriver
-
 import telegram
+from tqdm import tqdm
+
+from selenium import webdriver
+from selenium.webdriver.remote.remote_connection import LOGGER
+LOGGER.setLevel(logging.INFO)
 
 USUARIO = os.getenv("USUARIO")
 PASSWORD = os.getenv("PASSWORD")
+SEDE = os.getenv("SEDE")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_BOT_CHANNEL = os.getenv("TELEGRAM_BOT_CHANNEL")
@@ -20,15 +24,15 @@ bot_send_text = functools.partial(bot.send_message, chat_id=TELEGRAM_BOT_CHANNEL
 bot_send_photo = functools.partial(bot.send_photo, chat_id=TELEGRAM_BOT_CHANNEL)
 
 chrome_options = webdriver.chrome.options.Options()
-for opt in os.getenv("CHROME_OPTIONS", "").split(","): 
-    chrome_options.add_argument(opt)
+for opt in os.getenv("CHROME_OPTIONS", "").split(","):
+    if opt: chrome_options.add_argument(opt)
 
 WEBELEMENT_TIMEOUT = os.getenv("WEBELEMENT_TIMEOUT", 120)
 
-driver = webdriver.Chrome(options=chrome_options)
+driver = webdriver.Chrome(options=chrome_options, service_log_path="chromedriver.log")
 driver.implicitly_wait(WEBELEMENT_TIMEOUT)
 
-def countdown():
+def get_countdown():
     utc_now = datetime.now(timezone.utc)
     utc_22_00 = datetime.now(timezone.utc).replace(hour=22, minute=0, second=0, microsecond=0)
     total = (utc_22_00 - utc_now).total_seconds()
@@ -50,13 +54,13 @@ def wait_and_click_verde():
         time.sleep(1)
         driver.refresh()
         refreshs += 1
-    print(f"Refreshs: {refreshs}")
+    print(f"Total refreshs: {refreshs}")
     verdes[-1].click()
-    bot_send_text(text="📗 Click turno libre")
+    bot_send_text(text="📗 Click dia verde")
     driver.implicitly_wait(WEBELEMENT_TIMEOUT)
 
 if __name__ == '__main__':
-    driver.get('https://prenotaonline.esteri.it/login.aspx?cidsede=100086&returnUrl=%2f%2f')
+    driver.get(f"https://prenotaonline.esteri.it/login.aspx?cidsede={SEDE}&returnUrl=%2f%2f")
 
     # LOGIN
     bot_send_text(text="🔒 Login")
@@ -75,9 +79,10 @@ if __name__ == '__main__':
     driver.find_element_by_css_selector("input[value='Confirmación']").click()
 
     # CALENDARIO
-    bot_send_text(text="🔪 Calendario 🔪")
+    countdown = get_countdown()
+    bot_send_text(text=f"🔪 Calendario (esperando {countdown}s)🔪")
 
-    for i in tqdm(range(countdown()), desc="Final countdown"):
+    for i in tqdm(range(countdown), desc="Final countdown"):
         time.sleep(1)
 
     wait_and_click_verde()
