@@ -45,18 +45,17 @@ def wait_and_send_captcha(filename="captcha.png"):
     captcha.screenshot(filename)
     bot_send_photo(photo=open(filename, "rb"))
 
-def wait_and_click_verde():
+def wait_and_click_libre():
     driver.implicitly_wait(0)
-    verdes = []
+    libres = []
     refreshs = 0
-    while not verdes:
-        verdes = driver.find_elements_by_css_selector(".calendarCellOpen input")
-        time.sleep(1)
+    while not libres:
         driver.refresh()
         refreshs += 1
+        libres = driver.find_elements_by_css_selector(".calendarCellOpen input")
     print(f"Total refreshs: {refreshs}")
-    verdes[-1].click()
-    bot_send_text(text="📗 Click dia verde")
+    libres[-1].click()
+    bot_send_text(text="📗 Click dia libre")
     driver.implicitly_wait(WEBELEMENT_TIMEOUT)
 
 if __name__ == '__main__':
@@ -85,12 +84,12 @@ if __name__ == '__main__':
     for i in tqdm(range(countdown), desc="Final countdown"):
         time.sleep(1)
 
-    wait_and_click_verde()
-    driver.find_element_by_css_selector("input[value='Confirmación']").click()
+    wait_and_click_libre()
+    driver.find_element_by_css_selector("input[name='Confirmación']").click()
     
     # CAPTCHA CONFIRMACION
     bot_send_text(text="🔪 Esperando captcha confirmacion")
-    captcha = driver.find_element_by_css_selector("input[value*='aptcha']")
+    captcha = driver.find_element_by_css_selector("input[name*='captcha']")
     wait_and_send_captcha()
     captcha.send_keys(input("CAPTCHA: "))
     driver.find_element_by_css_selector("input[value='Confirmación']").click()
